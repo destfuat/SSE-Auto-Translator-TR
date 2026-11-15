@@ -22,6 +22,7 @@ class Language(Enum):
     English = "en_US"
     German = "de_DE"
     # Russian = "ru_RU"
+    Turkish = "tr_TR"
 
 
 class LocalisationUtils:
