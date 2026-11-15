@@ -12,6 +12,7 @@ from mod_manager_lib.core.mod_manager.vortex.profile_info import ProfileInfo
 from pydantic import Field
 
 from core.translation_provider.provider_preference import ProviderPreference
+from core.utilities.character_fallback import CharacterFallback
 from core.utilities.game_language import GameLanguage
 
 
@@ -55,6 +56,9 @@ class UserConfig(BaseConfig):
 
     parse_bsa_archives: bool = True
     """Whether to parse the BSA archives of a modlist."""
+
+    character_fallback: CharacterFallback = CharacterFallback.Disabled
+    """Character fallback mode applied when building the output mod."""
 
     @staticmethod
     def create() -> UserConfig:

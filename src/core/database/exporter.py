@@ -15,6 +15,8 @@ from core.database.translation import Translation
 from core.mod_file.mod_file import ModFile
 from core.mod_file.translation_status import TranslationStatus
 from core.mod_instance.mod_instance import ModInstance
+from core.string.types import StringList
+from core.utilities.character_fallback import CharacterFallback
 from core.utilities.constants import OUTPUT_MOD_MARKER_FILENAME
 
 
@@ -33,6 +35,7 @@ class Exporter(QObject):
         output_path: Path,
         use_dsd_format: bool = True,
         output_mod: bool = False,
+        character_fallback: CharacterFallback = CharacterFallback.Disabled,
     ) -> None:
         """
         Exports a translation with the original mod files that are installed in the
@@ -47,6 +50,9 @@ class Exporter(QObject):
             output_mod (bool, optional):
                 Whether the export is used in the output mod. This affects DSD file
                 names. Defaults to False.
+            character_fallback (CharacterFallback, optional):
+                Character fallback mode applied to exported strings without modifying
+                the database. Defaults to CharacterFallback.Disabled.
         """
 
         cls.log.info(
@@ -55,6 +61,7 @@ class Exporter(QObject):
         )
         cls.log.debug(f"Output mod: {output_mod}")
         cls.log.debug(f"Use DSD format: {use_dsd_format}")
+        cls.log.debug(f"Character fallback: {character_fallback.value}")
 
         for modfile_path, strings in translation.strings.items():
             original_modfile: Optional[ModFile] = mod_instance.get_modfile(
@@ -67,9 +74,22 @@ class Exporter(QObject):
                 )
                 continue
 
+            export_strings: StringList = (
+                [
+                    s.model_copy(
+                        update={"string": character_fallback.apply(s.string)}
+                    )
+                    if s.string is not None
+                    else s
+                    for s in strings
+                ]
+                if character_fallback != CharacterFallback.Disabled
+                else strings
+            )
+
             try:
                 original_modfile.dump_strings(
-                    strings=strings,
+                    strings=export_strings,
                     output_folder=output_path,
                     use_dsd_format=use_dsd_format,
                     output_mod=output_mod,
@@ -137,6 +157,7 @@ class Exporter(QObject):
                 output_path=output_path,
                 use_dsd_format=user_config.use_dynamic_string_distributor,
                 output_mod=True,
+                character_fallback=user_config.character_fallback,
             )
 
         (output_path / OUTPUT_MOD_MARKER_FILENAME).touch()  # Create marker file

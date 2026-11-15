@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 
 from core.config.user_config import UserConfig
 from core.translation_provider.provider_preference import ProviderPreference
+from core.utilities.character_fallback import CharacterFallback
 from core.utilities.constants import GAME_ID
 from core.utilities.game_language import GameLanguage
 from ui.widgets.api_setup_dialog import ApiSetupDialog
@@ -47,6 +48,7 @@ class UserSettings(SettingsPage[UserConfig]):
     __lang_box: EnumDropdown[GameLanguage]
     __source_label: QLabel
     __source_box: EnumDropdown[ProviderPreference]
+    __character_fallback_box: EnumDropdown[CharacterFallback]
     __api_key_entry: KeyLineEdit
     __website_session: Optional[str]
     __masterlist_box: QCheckBox
@@ -135,6 +137,25 @@ class UserSettings(SettingsPage[UserConfig]):
         )
         author_blacklist_button.clicked.connect(self.__open_author_blacklist)
         translations_flayout.addRow(author_blacklist_button)
+
+        self.__character_fallback_box = EnumDropdown(
+            CharacterFallback, self._config.character_fallback
+        )
+        self.__character_fallback_box.installEventFilter(self)
+        self.__character_fallback_box.setToolTip(
+            self._config.character_fallback.get_localized_description()
+        )
+        self.__character_fallback_box.currentValueChanged.connect(
+            lambda value: self.__character_fallback_box.setToolTip(
+                value.get_localized_description()
+            )
+        )
+        self.__character_fallback_box.currentValueChanged.connect(
+            lambda _: self.changed_signal.emit()
+        )
+        translations_flayout.addRow(
+            self.tr("Export character fallback"), self.__character_fallback_box
+        )
 
     def __init_instance_settings(self) -> None:
         instance_group = QGroupBox("*" + self.tr("Modlist"))
@@ -225,3 +246,6 @@ class UserSettings(SettingsPage[UserConfig]):
             self._config.provider_preference = self.__source_box.getCurrentValue()
             self._config.author_blacklist = self.__author_blacklist
             self._config.parse_bsa_archives = self.__parse_bsas_checkbox.isChecked()
+            self._config.character_fallback = (
+                self.__character_fallback_box.getCurrentValue()
+            )
